@@ -39,7 +39,6 @@ thesis-pipeline/
 ├── run_anthropic.py
 ├── run_gemini.py
 ├── run_gemini_batch.py
-├── repair_gemini_sonar.py
 ├── data/
 │   ├── mbpp-modified.jsonl
 │   └── task_subset_10.txt
