@@ -1,0 +1,14 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+outputs/
+export_bundle/
+*.tar.gz
+.vscode/
+.idea/
+*.log
