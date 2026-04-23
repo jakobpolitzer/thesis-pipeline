@@ -131,28 +131,28 @@ Nur Lösungen mit `test_status == pass` werden an SonarQube übergeben.
 
 ```bash
 source .venv/bin/activate
-python run_openai.py --min-task-id 11 --max-task-id 20 --limit 10
+python run_openai.py --min-task-id 11 --max-task-id 510 --limit 500
 ```
 
 ### Anthropic (Standardmodus)
 
 ```bash
 source .venv/bin/activate
-python run_anthropic.py --min-task-id 11 --max-task-id 20 --limit 10
+python run_anthropic.py --min-task-id 11 --max-task-id 510 --limit 500
 ```
 
 ### Gemini (Standardmodus)
 
 ```bash
 source .venv/bin/activate
-python run_gemini.py --min-task-id 11 --max-task-id 20 --limit 10
+python run_gemini.py --min-task-id 11 --max-task-id 510 --limit 500
 ```
 
 ### Gemini (Batch-Modus)
 
 ```bash
 source .venv/bin/activate
-python run_gemini_batch.py --min-task-id 11 --max-task-id 20 --limit 10
+python run_gemini_batch.py --min-task-id 11 --max-task-id 510 --limit 500
 ```
 
 ## Ergebnisdaten
