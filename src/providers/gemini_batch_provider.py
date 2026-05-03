@@ -35,10 +35,9 @@ def upload_batch_input(jsonl_path: Path, display_name: str) -> str:
         file=str(jsonl_path),
         config=genai_types.UploadFileConfig(
             display_name=display_name,
-            mime_type="jsonl",
+            mime_type="application/jsonl",
         ),
     )
-    # files/<id>
     return uploaded.name
 
 
@@ -52,7 +51,11 @@ def create_batch(input_file_id: str) -> dict[str, Any]:
     return batch.model_dump() if hasattr(batch, "model_dump") else dict(batch)
 
 
-def wait_for_batch(batch_name: str, poll_seconds: int = 30) -> dict[str, Any]:
+def wait_for_batch(
+    batch_name: str,
+    poll_seconds: int = 30,
+    max_attempts: int | None = None,
+) -> dict[str, Any]:
     client = _genai_client()
 
     completed_states = {
@@ -62,9 +65,14 @@ def wait_for_batch(batch_name: str, poll_seconds: int = 30) -> dict[str, Any]:
         "JOB_STATE_EXPIRED",
     }
 
+    attempt = 0
+
     while True:
+        attempt += 1
         batch_job = client.batches.get(name=batch_name)
-        state = getattr(getattr(batch_job, "state", None), "name", None) or str(getattr(batch_job, "state", ""))
+        state = getattr(getattr(batch_job, "state", None), "name", None) or str(
+            getattr(batch_job, "state", "")
+        )
 
         print(f"[BATCH POLL] {batch_name} -> {state}")
 
@@ -76,23 +84,36 @@ def wait_for_batch(batch_name: str, poll_seconds: int = 30) -> dict[str, Any]:
                 "raw": batch_job,
             }
 
+        if max_attempts is not None and attempt >= max_attempts:
+            raise TimeoutError(
+                f"Gemini batch did not finish after {max_attempts} polling attempts. "
+                f"Last state: {state}"
+            )
+
         time.sleep(poll_seconds)
 
 
 def download_batch_output(output_file_id: str, output_path: Path) -> None:
     client = _genai_client()
     content = client.files.download(file=output_file_id)
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
     if isinstance(content, bytes):
         output_path.write_bytes(content)
+    elif isinstance(content, str):
+        output_path.write_text(content, encoding="utf-8")
     else:
         output_path.write_bytes(bytes(content))
 
 
 def parse_batch_output(output_path: Path) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
+
     with output_path.open("r", encoding="utf-8") as f:
         for line in f:
             if not line.strip():
                 continue
             rows.append(json.loads(line))
+
     return rows

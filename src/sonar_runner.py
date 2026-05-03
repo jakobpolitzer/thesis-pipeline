@@ -63,6 +63,7 @@ def fetch_sonar_measures(
     project_key: str,
 ) -> dict[str, str]:
     url = f"{sonar_host_url.rstrip('/')}/api/measures/component"
+
     response = requests.get(
         url,
         params={
@@ -73,15 +74,25 @@ def fetch_sonar_measures(
         timeout=30,
     )
     response.raise_for_status()
+
     payload = response.json()
 
     measures = {key: "" for key in SONAR_METRIC_KEYS}
     for item in payload.get("component", {}).get("measures", []):
         metric = item.get("metric")
         value = item.get("value", "")
+
         if metric in measures:
             measures[metric] = value
+
     return measures
+
+
+def has_complete_sonar_measures(measures: dict[str, str]) -> bool:
+    return all(
+        str(measures.get(metric_key, "")).strip() != ""
+        for metric_key in SONAR_METRIC_KEYS
+    )
 
 
 def wait_for_sonar_measures(
@@ -92,12 +103,33 @@ def wait_for_sonar_measures(
     max_attempts: int,
 ) -> dict[str, str]:
     last_error: Exception | None = None
-    for _ in range(max_attempts):
+    last_measures: dict[str, str] = {}
+
+    for attempt in range(1, max_attempts + 1):
         try:
-            return fetch_sonar_measures(sonar_host_url, sonar_token, project_key)
-        except Exception as exc:  # pragma: no cover
+            measures = fetch_sonar_measures(
+                sonar_host_url=sonar_host_url,
+                sonar_token=sonar_token,
+                project_key=project_key,
+            )
+            last_measures = measures
+
+            if has_complete_sonar_measures(measures):
+                return measures
+
+        except Exception as exc:
             last_error = exc
+
+        if attempt < max_attempts:
             time.sleep(poll_seconds)
-    if last_error:
-        raise last_error
-    raise RuntimeError("Failed to fetch SonarQube measures.")
+
+    if last_error is not None:
+        raise RuntimeError(
+            f"Failed to fetch complete SonarQube measures for project {project_key}. "
+            f"Last measures: {last_measures}"
+        ) from last_error
+
+    raise RuntimeError(
+        f"SonarQube measures incomplete for project {project_key} after "
+        f"{max_attempts} attempts. Last measures: {last_measures}"
+    )

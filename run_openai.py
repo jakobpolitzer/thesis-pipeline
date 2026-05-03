@@ -19,6 +19,7 @@ from src.config import (
     SONAR_MAX_POLL_ATTEMPTS,
     SONAR_POLL_SECONDS,
     SONAR_TOKEN,
+    GENERATION_TEMPERATURE
 )
 from src.mbpp_loader import filter_tasks, load_mbpp_tasks
 from src.pipeline_core import run_pipeline
@@ -63,6 +64,7 @@ def main() -> None:
         sonar_max_poll_attempts=SONAR_MAX_POLL_ATTEMPTS,
         timeout_seconds=args.timeout,
         run_id=run_id,
+        generation_temperature=GENERATION_TEMPERATURE
     )
 
 if __name__ == "__main__":

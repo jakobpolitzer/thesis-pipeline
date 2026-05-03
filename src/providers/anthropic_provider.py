@@ -3,12 +3,13 @@ from __future__ import annotations
 from anthropic import Anthropic
 
 
-def call_anthropic(model_name: str, prompt: str) -> dict:
+def call_anthropic(model_name: str, prompt: str, temperature: float = 0.2) -> dict:
     client = Anthropic()
 
     response = client.messages.create(
         model=model_name,
         max_tokens=2000,
+        temperature=temperature,
         messages=[
             {"role": "user", "content": prompt},
         ],

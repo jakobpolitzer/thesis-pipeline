@@ -193,6 +193,3 @@ Der generierte Python-Code wird automatisiert in einem Subprozess mit Timeout au
 
 Trotz dieser einfachen Schutzmaßnahmen muss der generierte Code als nicht vertrauenswürdig betrachtet werden. Für größere oder produktionsnahe Experimente ist eine stärker isolierte Ausführungsumgebung empfehlenswert.
 
-## Kontext der Arbeit
-
-Dieses Repository wurde im Rahmen einer Bachelorarbeit erstellt, die die Verständlichkeit von LLM-generiertem Python-Code anhand standardisierter Benchmark-Aufgaben, automatisierter Tests und statischer Code-Metriken untersucht.

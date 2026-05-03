@@ -18,11 +18,12 @@ def _get_client() -> OpenAI:
     return _client
 
 
-def call_openai(model_name: str, prompt: str) -> dict[str, Any]:
+def call_openai(model_name: str, prompt: str, temperature: float = 0.2) -> dict[str, Any]:
     client = _get_client()
     response = client.responses.create(
         model=model_name,
         input=prompt,
+        temperature=temperature,
     )
 
     usage = getattr(response, "usage", None)

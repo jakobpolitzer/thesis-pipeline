@@ -12,7 +12,7 @@ from src.prompts import build_prompt
 from src.sonar_runner import create_sonar_project, run_sonar_scan, wait_for_sonar_measures
 from src.test_runner import run_mbpp_tests
 
-ProviderCallable = Callable[[str, str], dict[str, Any]]
+ProviderCallable = Callable[[str, str, float], dict[str, Any]]
 
 
 def extract_function_signature(reference_code: str) -> str:
@@ -54,9 +54,12 @@ def process_single_response(
 
     safe_stem = f"{provider_name}_{model_name}_{task_id}_{prompt_type}".replace("/", "_")
     raw_path = raw_dir / f"{safe_stem}.txt"
-    raw_path.write_text(raw_text, encoding="utf-8")
-
     code_path = code_dir / f"{safe_stem}.py"
+
+    raw_path.parent.mkdir(parents=True, exist_ok=True)
+    code_path.parent.mkdir(parents=True, exist_ok=True)
+
+    raw_path.write_text(raw_text, encoding="utf-8")
     code_path.write_text(code, encoding="utf-8")
 
     test_result = run_mbpp_tests(
@@ -78,6 +81,7 @@ def process_single_response(
         "returncode": test_result["returncode"],
         "input_tokens": response_meta.get("input_tokens", 0),
         "output_tokens": response_meta.get("output_tokens", 0),
+        "temperature": response_meta.get("temperature", ""),
         "response_id": response_meta.get("response_id", ""),
         "stdout": test_result["stdout"],
         "stderr": test_result["stderr"],
@@ -98,17 +102,20 @@ def process_single_response(
         scan_result = run_sonar_scan(project_dir, sonar_host_url, sonar_token)
 
         if scan_result["status"] == "ok":
-            measures = wait_for_sonar_measures(
-                sonar_host_url=sonar_host_url,
-                sonar_token=sonar_token,
-                project_key=project_dir.name,
-                poll_seconds=sonar_poll_seconds,
-                max_attempts=sonar_max_poll_attempts,
-            )
-            row["cognitive_complexity"] = measures.get("cognitive_complexity", "")
-            row["cyclomatic_complexity"] = measures.get("complexity", "")
-            row["lines_of_code"] = measures.get("ncloc", "")
-            row["code_smells"] = measures.get("code_smells", "")
+            try:
+                measures = wait_for_sonar_measures(
+                    sonar_host_url=sonar_host_url,
+                    sonar_token=sonar_token,
+                    project_key=project_dir.name,
+                    poll_seconds=sonar_poll_seconds,
+                    max_attempts=sonar_max_poll_attempts,
+                )
+                row["cognitive_complexity"] = measures.get("cognitive_complexity", "")
+                row["cyclomatic_complexity"] = measures.get("complexity", "")
+                row["lines_of_code"] = measures.get("ncloc", "")
+                row["code_smells"] = measures.get("code_smells", "")
+            except Exception as exc:
+                row["stderr"] = f"{row['stderr']}\nSONAR ERROR:\n{exc}".strip()
         else:
             row["stderr"] = f"{row['stderr']}\nSONAR ERROR:\n{scan_result['stderr']}".strip()
 
@@ -127,10 +134,11 @@ def run_pipeline(
     enable_sonar: bool = False,
     sonar_host_url: str | None = None,
     sonar_token: str | None = None,
-    sonar_poll_seconds: int = 2,
-    sonar_max_poll_attempts: int = 20,
+    sonar_poll_seconds: int = 5,
+    sonar_max_poll_attempts: int = 120,
     timeout_seconds: int = 10,
     run_id: str = "run_unknown",
+    generation_temperature: float = 0.2,
 ) -> None:
     init_csv(csv_path)
 
@@ -143,7 +151,7 @@ def run_pipeline(
             prompt = build_prompt(task_text, prompt_type, function_signature)
 
             started = perf_counter()
-            response = provider_call(model_name, prompt)
+            response = provider_call(model_name, prompt, generation_temperature)
             latency = perf_counter() - started
 
             process_single_response(
@@ -157,6 +165,7 @@ def run_pipeline(
                     "provider_latency_seconds": round(latency, 4),
                     "input_tokens": response.get("input_tokens", 0),
                     "output_tokens": response.get("output_tokens", 0),
+                    "temperature": generation_temperature,
                     "response_id": response.get("response_id", ""),
                 },
                 csv_path=csv_path,

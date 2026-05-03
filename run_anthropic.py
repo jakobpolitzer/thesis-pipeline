@@ -11,6 +11,10 @@ from src.config import (
     SONAR_DIR,
     SONAR_HOST_URL,
     SONAR_TOKEN,
+    GENERATION_TEMPERATURE,
+    SONAR_POLL_SECONDS,
+    SONAR_MAX_POLL_ATTEMPTS,
+    DEFAULT_TIMEOUT_SECONDS
 )
 from src.mbpp_loader import filter_tasks, load_mbpp_tasks
 from src.pipeline_core import run_pipeline
@@ -50,6 +54,10 @@ def main() -> None:
         sonar_host_url=SONAR_HOST_URL,
         sonar_token=SONAR_TOKEN,
         run_id=run_id,
+        sonar_poll_seconds=SONAR_POLL_SECONDS,
+        sonar_max_poll_attempts=SONAR_MAX_POLL_ATTEMPTS,
+        timeout_seconds=DEFAULT_TIMEOUT_SECONDS,
+        generation_temperature=GENERATION_TEMPERATURE
     )
 
 

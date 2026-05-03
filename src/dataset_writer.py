@@ -15,6 +15,7 @@ FIELDNAMES = [
     "returncode",
     "input_tokens",
     "output_tokens",
+    "temperature",
     "response_id",
     "stdout",
     "stderr",
