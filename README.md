@@ -40,8 +40,7 @@ thesis-pipeline/
 ├── run_gemini.py
 ├── run_gemini_batch.py
 ├── data/
-│   ├── mbpp-modified.jsonl
-│   └── task_subset_10.txt
+│   └── mbpp-modified.jsonl
 └── src/
     ├── __init__.py
     ├── config.py
